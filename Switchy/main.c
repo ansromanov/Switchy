@@ -157,11 +157,9 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						ReleaseKey(VK_MENU);
 						ReleaseKey(VK_LSHIFT);
 					}
-					else
-					{
-						keystrokeShiftProcessed = FALSE;
-					}
 				}
+
+				keystrokeShiftProcessed = FALSE;
 			}
 
 			if (!enabled)
