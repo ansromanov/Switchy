@@ -220,10 +220,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						winPressed = TRUE;
 					}
 
-					return 0;
+					return 1;
 				}
 			}
-			return 0;
+			return CallNextHookEx(hHook, nCode, wParam, lParam);
 		}
 	}
 
