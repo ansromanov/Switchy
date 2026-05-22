@@ -15,7 +15,7 @@ typedef struct {
 
 void ShowError(LPCSTR message);
 DWORD GetOSVersion();
-HICON CreateColorIcon(COLORREF color);
+HICON CreateCircleIcon(COLORREF color, BOOL ring);
 void UpdateTrayIcon();
 void PressKey(int keyCode);
 void ReleaseKey(int keyCode);
@@ -70,8 +70,8 @@ int main(int argc, char** argv)
 
 	hWnd = CreateWindow("SwitchyWindow", NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, wc.hInstance, NULL);
 
-	hIconEnabled  = CreateColorIcon(RGB(0, 180, 0));
-	hIconDisabled = CreateColorIcon(RGB(128, 128, 128));
+	hIconEnabled  = CreateCircleIcon(RGB(220, 220, 220), FALSE);
+	hIconDisabled = CreateCircleIcon(RGB(90, 90, 90), TRUE);
 
 	WM_TASKBARCREATED = RegisterWindowMessage("TaskbarCreated");
 
@@ -135,9 +135,29 @@ DWORD GetOSVersion()
 }
 
 
-HICON CreateColorIcon(COLORREF color)
+HICON CreateCircleIcon(COLORREF color, BOOL ring)
 {
 	BYTE maskBits[32] = {0};
+	DWORD colorBits[16 * 16] = {0};
+
+	float cx = 7.5f, cy = 7.5f;
+	float outerR2 = 6.5f * 6.5f;
+	float innerR2 = ring ? (4.0f * 4.0f) : 0.0f;
+	DWORD pixel = GetBValue(color) | ((DWORD)GetGValue(color) << 8) | ((DWORD)GetRValue(color) << 16);
+
+	for (int y = 0; y < 16; y++)
+	{
+		for (int x = 0; x < 16; x++)
+		{
+			float dx = x - cx, dy = y - cy;
+			float d2 = dx * dx + dy * dy;
+			if (d2 <= outerR2 && d2 >= innerR2)
+				colorBits[y * 16 + x] = pixel;
+			else
+				maskBits[y * 2 + x / 8] |= (1 << (7 - x % 8));
+		}
+	}
+
 	HBITMAP hMask = CreateBitmap(16, 16, 1, 1, maskBits);
 
 	BITMAPINFO bmi = {0};
@@ -153,8 +173,7 @@ HICON CreateColorIcon(COLORREF color)
 	HBITMAP hColor = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&bits, NULL, 0);
 	ReleaseDC(NULL, hdc);
 
-	DWORD pixel = GetBValue(color) | ((DWORD)GetGValue(color) << 8) | ((DWORD)GetRValue(color) << 16);
-	for (int i = 0; i < 16 * 16; i++) bits[i] = pixel;
+	for (int i = 0; i < 16 * 16; i++) bits[i] = colorBits[i];
 
 	ICONINFO ii = {TRUE, 0, 0, hMask, hColor};
 	HICON hIcon = CreateIconIndirect(&ii);
