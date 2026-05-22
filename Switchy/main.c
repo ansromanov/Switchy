@@ -15,7 +15,7 @@ typedef struct {
 
 void ShowError(LPCSTR message);
 DWORD GetOSVersion();
-HICON CreateCircleIcon(COLORREF color, BOOL ring);
+HICON CreateCircleIcon(COLORREF color, BOOL hollow);
 void UpdateTrayIcon();
 void PressKey(int keyCode);
 void ReleaseKey(int keyCode);
@@ -31,8 +31,7 @@ BOOL enabled = TRUE;
 BOOL keystrokeCapsProcessed = FALSE;
 BOOL keystrokeShiftProcessed = FALSE;
 BOOL winPressed = FALSE;
-HICON hIconEnabled;
-HICON hIconDisabled;
+HICON hIcon;
 NOTIFYICONDATA nid;
 UINT WM_TASKBARCREATED;
 
@@ -70,8 +69,7 @@ int main(int argc, char** argv)
 
 	hWnd = CreateWindow("SwitchyWindow", NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, wc.hInstance, NULL);
 
-	hIconEnabled  = CreateCircleIcon(RGB(220, 220, 220), FALSE);
-	hIconDisabled = CreateCircleIcon(RGB(90, 90, 90), TRUE);
+	hIcon = CreateCircleIcon(RGB(200, 200, 200), FALSE);
 
 	WM_TASKBARCREATED = RegisterWindowMessage("TaskbarCreated");
 
@@ -81,8 +79,8 @@ int main(int argc, char** argv)
 	nid.uID              = 1;
 	nid.uFlags           = NIF_ICON | NIF_TIP | NIF_MESSAGE;
 	nid.uCallbackMessage = WM_TRAYICON;
-	nid.hIcon            = hIconEnabled;
-	lstrcpy(nid.szTip, "Switchy - Enabled");
+	nid.hIcon            = hIcon;
+	lstrcpy(nid.szTip, "Switchy");
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
 	hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, 0, 0);
@@ -102,8 +100,7 @@ int main(int argc, char** argv)
 
 	UnhookWindowsHookEx(hHook);
 	Shell_NotifyIcon(NIM_DELETE, &nid);
-	DestroyIcon(hIconEnabled);
-	DestroyIcon(hIconDisabled);
+	DestroyIcon(hIcon);
 
 	return 0;
 }
@@ -187,9 +184,12 @@ HICON CreateCircleIcon(COLORREF color, BOOL ring)
 
 void UpdateTrayIcon()
 {
-	nid.hIcon = enabled ? hIconEnabled : hIconDisabled;
-	lstrcpy(nid.szTip, enabled ? "Switchy - Enabled" : "Switchy - Disabled");
+	nid.uFlags |= NIF_INFO;
+	lstrcpy(nid.szInfoTitle, "Switchy");
+	lstrcpy(nid.szInfo, enabled ? "On" : "Off");
+	nid.dwInfoFlags = NIIF_NOSOUND;
 	Shell_NotifyIcon(NIM_MODIFY, &nid);
+	nid.uFlags &= ~NIF_INFO;
 }
 
 
