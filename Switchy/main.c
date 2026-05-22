@@ -15,7 +15,7 @@ typedef struct {
 
 void ShowError(LPCSTR message);
 DWORD GetOSVersion();
-HICON CreateCircleIcon(COLORREF color, BOOL hollow);
+HICON CreateTextIcon(const char* text);
 void UpdateTrayIcon();
 void PressKey(int keyCode);
 void ReleaseKey(int keyCode);
@@ -31,7 +31,8 @@ BOOL enabled = TRUE;
 BOOL keystrokeCapsProcessed = FALSE;
 BOOL keystrokeShiftProcessed = FALSE;
 BOOL winPressed = FALSE;
-HICON hIcon;
+HICON hIconOn;
+HICON hIconOff;
 NOTIFYICONDATA nid;
 UINT WM_TASKBARCREATED;
 
@@ -69,7 +70,8 @@ int main(int argc, char** argv)
 
 	hWnd = CreateWindow("SwitchyWindow", NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, wc.hInstance, NULL);
 
-	hIcon = CreateCircleIcon(RGB(200, 200, 200), FALSE);
+	hIconOn  = CreateTextIcon("On");
+	hIconOff = CreateTextIcon("Off");
 
 	WM_TASKBARCREATED = RegisterWindowMessage("TaskbarCreated");
 
@@ -79,7 +81,7 @@ int main(int argc, char** argv)
 	nid.uID              = 1;
 	nid.uFlags           = NIF_ICON | NIF_TIP | NIF_MESSAGE;
 	nid.uCallbackMessage = WM_TRAYICON;
-	nid.hIcon            = hIcon;
+	nid.hIcon            = hIconOn;
 	lstrcpy(nid.szTip, "Switchy");
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
@@ -100,7 +102,8 @@ int main(int argc, char** argv)
 
 	UnhookWindowsHookEx(hHook);
 	Shell_NotifyIcon(NIM_DELETE, &nid);
-	DestroyIcon(hIcon);
+	DestroyIcon(hIconOn);
+	DestroyIcon(hIconOff);
 
 	return 0;
 }
@@ -132,30 +135,10 @@ DWORD GetOSVersion()
 }
 
 
-HICON CreateCircleIcon(COLORREF color, BOOL ring)
+HICON CreateTextIcon(const char* text)
 {
-	BYTE maskBits[32] = {0};
-	DWORD colorBits[16 * 16] = {0};
-
-	float cx = 7.5f, cy = 7.5f;
-	float outerR2 = 6.5f * 6.5f;
-	float innerR2 = ring ? (4.0f * 4.0f) : 0.0f;
-	DWORD pixel = GetBValue(color) | ((DWORD)GetGValue(color) << 8) | ((DWORD)GetRValue(color) << 16);
-
-	for (int y = 0; y < 16; y++)
-	{
-		for (int x = 0; x < 16; x++)
-		{
-			float dx = x - cx, dy = y - cy;
-			float d2 = dx * dx + dy * dy;
-			if (d2 <= outerR2 && d2 >= innerR2)
-				colorBits[y * 16 + x] = pixel;
-			else
-				maskBits[y * 2 + x / 8] |= (1 << (7 - x % 8));
-		}
-	}
-
-	HBITMAP hMask = CreateBitmap(16, 16, 1, 1, maskBits);
+	HDC hdcScreen = GetDC(NULL);
+	HDC hdcMem = CreateCompatibleDC(hdcScreen);
 
 	BITMAPINFO bmi = {0};
 	bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
@@ -166,17 +149,40 @@ HICON CreateCircleIcon(COLORREF color, BOOL ring)
 	bmi.bmiHeader.biCompression = BI_RGB;
 
 	DWORD* bits;
-	HDC hdc = GetDC(NULL);
-	HBITMAP hColor = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&bits, NULL, 0);
-	ReleaseDC(NULL, hdc);
+	HBITMAP hBmp = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS, (void**)&bits, NULL, 0);
+	ReleaseDC(NULL, hdcScreen);
 
-	for (int i = 0; i < 16 * 16; i++) bits[i] = colorBits[i];
+	HBITMAP hOld = SelectObject(hdcMem, hBmp);
 
-	ICONINFO ii = {TRUE, 0, 0, hMask, hColor};
+	RECT rc = {0, 0, 16, 16};
+	FillRect(hdcMem, &rc, GetStockObject(BLACK_BRUSH));
+
+	HFONT hFont = CreateFont(11, 0, 0, 0, FW_BOLD, 0, 0, 0,
+		DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+		NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+	HFONT hOldFont = SelectObject(hdcMem, hFont);
+
+	SetTextColor(hdcMem, RGB(210, 210, 210));
+	SetBkMode(hdcMem, TRANSPARENT);
+	DrawText(hdcMem, text, -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	SelectObject(hdcMem, hOldFont);
+	DeleteObject(hFont);
+	SelectObject(hdcMem, hOld);
+	DeleteDC(hdcMem);
+
+	BYTE maskBits[32] = {0};
+	for (int y = 0; y < 16; y++)
+		for (int x = 0; x < 16; x++)
+			if (bits[y * 16 + x] == 0)
+				maskBits[y * 2 + x / 8] |= (1 << (7 - x % 8));
+
+	HBITMAP hMask = CreateBitmap(16, 16, 1, 1, maskBits);
+	ICONINFO ii = {TRUE, 0, 0, hMask, hBmp};
 	HICON hIcon = CreateIconIndirect(&ii);
 
 	DeleteObject(hMask);
-	DeleteObject(hColor);
+	DeleteObject(hBmp);
 
 	return hIcon;
 }
@@ -184,12 +190,8 @@ HICON CreateCircleIcon(COLORREF color, BOOL ring)
 
 void UpdateTrayIcon()
 {
-	nid.uFlags |= NIF_INFO;
-	lstrcpy(nid.szInfoTitle, "Switchy");
-	lstrcpy(nid.szInfo, enabled ? "On" : "Off");
-	nid.dwInfoFlags = NIIF_NOSOUND;
+	nid.hIcon = enabled ? hIconOn : hIconOff;
 	Shell_NotifyIcon(NIM_MODIFY, &nid);
-	nid.uFlags &= ~NIF_INFO;
 }
 
 
