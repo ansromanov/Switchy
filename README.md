@@ -1,16 +1,38 @@
 # Switchy
 
-> [!WARNING]
-> At the moment, I have neither the time nor the inclination to support this program. If you have any issues with the stable version, you can try one of the preview builds in [this issue](https://github.com/erryox/Switchy/issues/14). Some bugs should be fixed in it, but there are other issues as well, which is why it’s a preview build. Feel free to fork this repo if you’d like to make any changes or improvements!
+Switches keyboard layout with the Caps Lock key on Windows 10/11.
 
-Switches keyboard layout with the Caps Lock key.
+## Installation
 
-Just put [Switchy.exe](https://github.com/erryox/Switchy/releases/latest) in the startup folder (to open it press **Win+R** and type **shell:startup**).  
-If you want to hide the pop-up in Windows 10/11, put in this folder a shortcut with **nopopup** parameter instead of the file itself.
+Put `Switchy.exe` in the startup folder (press **Win+R**, type `shell:startup`).
 
-> Note: for keyboard layout switching to work in programs running with administrator privileges, Switchy must also be run with administrator privileges. This can be automated using Task Scheduler.
+To hide the language switcher pop-up, place a shortcut in that folder with `nopopup` as the argument instead of the exe itself.
 
-Usage:
-* **CapsLock** to change keyboard layout  
-* **Shift+CapsLock** to toggle CapsLock state
-* **Alt+CapsLock** to enable/disable Switchy
+> **Note:** For layout switching to work in programs running as administrator, Switchy must also run as administrator. Automate this via Task Scheduler.
+
+## Usage
+
+| Shortcut | Action |
+|---|---|
+| **CapsLock** | Switch keyboard layout |
+| **Shift+CapsLock** | Toggle CapsLock state |
+| **Alt+CapsLock** | Enable / disable Switchy |
+
+## Tray icon
+
+Switchy runs in the system tray (bottom-right corner).
+
+- **Green** — enabled, CapsLock switches layout
+- **Gray** — disabled, CapsLock behaves normally
+
+Hover for status tooltip. Right-click → **Exit** to quit.
+
+## Build
+
+Open `Switchy.sln` in Visual Studio 2022, or:
+
+```
+msbuild /m /p:Configuration=Release Switchy.sln
+```
+
+Output: `x64/Release/Switchy.exe`
