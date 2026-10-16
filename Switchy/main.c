@@ -6,6 +6,7 @@
 
 #define WM_TRAYICON (WM_APP + 1)
 #define IDM_EXIT    1001
+#define IDM_TOGGLE  1002
 
 typedef NTSTATUS(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
 
@@ -212,6 +213,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			POINT pt;
 			GetCursorPos(&pt);
 			HMENU hMenu = CreatePopupMenu();
+			AppendMenu(hMenu, MF_STRING, IDM_TOGGLE, enabled ? "Pause" : "Resume");
+			AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
 			AppendMenu(hMenu, MF_STRING, IDM_EXIT, "Exit");
 			SetForegroundWindow(hwnd);
 			TrackPopupMenu(hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, NULL);
@@ -219,6 +222,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	case WM_COMMAND:
+		if (LOWORD(wParam) == IDM_TOGGLE)
+		{
+			enabled = !enabled;
+			UpdateTrayIcon();
+			return 0;
+		}
 		if (LOWORD(wParam) == IDM_EXIT)
 		{
 			PostQuitMessage(0);
