@@ -14,7 +14,8 @@ active keyboard layout. It is intended for Windows 10 and 11.
 When enabled, Switchy intercepts Caps Lock with a low-level keyboard hook.
 The tray icon shows whether it is enabled: **On** means layout switching is
 active; **Off** means Caps Lock behaves normally. Right-click the tray icon
-and choose **Exit** to close the app.
+and choose **Pause** or **Resume** to control switching, or **Exit** to close
+the app. The pause state lasts until Switchy exits; it starts enabled next time.
 
 By default, layout switching uses **Win + Space**. To suppress the Windows
 language switcher pop-up, run Switchy with the `nopopup` argument; in that
@@ -23,12 +24,26 @@ configured in Windows.
 
 ## Install and start with Windows
 
-1. Place `Switchy.exe` in a folder that will remain on your PC.
-2. Press **Win + R**, enter `shell:startup`, and press **Enter**.
-3. Create a shortcut to `Switchy.exe` in the Startup folder.
+Download and extract `Switchy-windows-x64.zip` from the project's
+[GitHub Releases page](https://github.com/ansromanov/Switchy/releases). In
+PowerShell, run the included installer from the extracted folder:
 
-To use the no-pop-up mode, open the shortcut's **Properties** and add
-`nopopup` after the executable path in **Target**, for example:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Switchy.ps1
+```
+
+The installer copies Switchy to your user programs folder and creates a
+shortcut in your Windows Startup folder, so it starts when you sign in. To
+suppress the language switcher pop-up, install with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Switchy.ps1 -NoPopup
+```
+
+To uninstall, run `Uninstall-Switchy.ps1` from the extracted folder.
+
+To configure no-pop-up mode manually, add `nopopup` after the executable path
+in the startup shortcut's **Target**, for example:
 
 ```text
 "C:\Apps\Switchy\Switchy.exe" nopopup
@@ -49,3 +64,8 @@ msbuild /m /p:Configuration=Release /p:Platform=x64 Switchy.sln
 ```
 
 The expected executable path is `x64\Release\Switchy.exe`.
+
+Pushing a version tag such as `v1.0.0` builds the x64 app, packages the
+installer scripts, and publishes `Switchy-windows-x64.zip` as a GitHub Release
+asset. The executable includes the Visual C++ runtime, so a separate runtime
+install is not required.

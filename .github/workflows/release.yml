@@ -1,0 +1,38 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3
+
+      - name: Build x64 Release
+        run: msbuild /m /p:Configuration=Release /p:Platform=x64 Switchy.sln
+
+      - name: Package Windows release
+        shell: pwsh
+        run: |
+          $packageDirectory = Join-Path $env:RUNNER_TEMP 'Switchy-windows-x64'
+          New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
+          Copy-Item x64/Release/Switchy.exe, README.md, LICENSE, Install-Switchy.ps1, Uninstall-Switchy.ps1 -Destination $packageDirectory
+          Compress-Archive -Path (Join-Path $packageDirectory '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE 'Switchy-windows-x64.zip') -Force
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
+          files: Switchy-windows-x64.zip
