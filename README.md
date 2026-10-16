@@ -1,38 +1,51 @@
 # Switchy
 
-Switches keyboard layout with the Caps Lock key on Windows 10/11.
+Switchy is a small Windows tray app that uses **Caps Lock** to switch the
+active keyboard layout. It is intended for Windows 10 and 11.
 
-## Installation
-
-Put `Switchy.exe` in the startup folder (press **Win+R**, type `shell:startup`).
-
-To hide the language switcher pop-up, place a shortcut in that folder with `nopopup` as the argument instead of the exe itself.
-
-> **Note:** For layout switching to work in programs running as administrator, Switchy must also run as administrator. Automate this via Task Scheduler.
-
-## Usage
+## What it does
 
 | Shortcut | Action |
 |---|---|
-| **CapsLock** | Switch keyboard layout |
-| **Shift+CapsLock** | Toggle CapsLock state |
-| **Alt+CapsLock** | Enable / disable Switchy |
+| **Caps Lock** | Switch keyboard layout |
+| **Shift + Caps Lock** | Toggle the Caps Lock state |
+| **Alt + Caps Lock** | Enable or disable Switchy |
 
-## Tray icon
+When enabled, Switchy intercepts Caps Lock with a low-level keyboard hook.
+The tray icon shows whether it is enabled: **On** means layout switching is
+active; **Off** means Caps Lock behaves normally. Right-click the tray icon
+and choose **Exit** to close the app.
 
-Switchy runs in the system tray (bottom-right corner).
+By default, layout switching uses **Win + Space**. To suppress the Windows
+language switcher pop-up, run Switchy with the `nopopup` argument; in that
+mode it sends **Alt + Shift** instead. This uses the keyboard layout shortcut
+configured in Windows.
 
-- **Green** — enabled, CapsLock switches layout
-- **Gray** — disabled, CapsLock behaves normally
+## Install and start with Windows
 
-Hover for status tooltip. Right-click → **Exit** to quit.
+1. Place `Switchy.exe` in a folder that will remain on your PC.
+2. Press **Win + R**, enter `shell:startup`, and press **Enter**.
+3. Create a shortcut to `Switchy.exe` in the Startup folder.
+
+To use the no-pop-up mode, open the shortcut's **Properties** and add
+`nopopup` after the executable path in **Target**, for example:
+
+```text
+"C:\Apps\Switchy\Switchy.exe" nopopup
+```
+
+Switchy uses a process-wide named mutex, so only one instance can run at a
+time. If you need layout switching in applications running as administrator,
+run Switchy at the same privilege level. You can configure that through Task
+Scheduler.
 
 ## Build
 
-Open `Switchy.sln` in Visual Studio 2022, or:
+Build with Visual Studio 2022 and the **Desktop development with C++**
+workload, or from a Developer Command Prompt:
 
-```
-msbuild /m /p:Configuration=Release Switchy.sln
+```bat
+msbuild /m /p:Configuration=Release /p:Platform=x64 Switchy.sln
 ```
 
-Output: `x64/Release/Switchy.exe`
+The expected executable path is `x64\Release\Switchy.exe`.
