@@ -30,6 +30,7 @@ HWND hWnd;
 BOOL enabled = TRUE;
 BOOL keystrokeCapsProcessed = FALSE;
 BOOL keystrokeShiftProcessed = FALSE;
+BOOL keystrokeToggleProcessed = FALSE;
 BOOL winPressed = FALSE;
 HICON hIconOn;
 HICON hIconOff;
@@ -288,11 +289,19 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			if (wParam == WM_SYSKEYDOWN && !keystrokeCapsProcessed)
 			{
 				keystrokeCapsProcessed = TRUE;
+				keystrokeToggleProcessed = TRUE;
 				enabled = !enabled;
 				UpdateTrayIcon();
 #if _DEBUG
 				printf("Switchy has been %s\n", enabled ? "enabled" : "disabled");
 #endif // _DEBUG
+				return 1;
+			}
+
+			if ((wParam == WM_SYSKEYUP) && keystrokeToggleProcessed)
+			{
+				keystrokeToggleProcessed = FALSE;
+				keystrokeCapsProcessed = FALSE;
 				return 1;
 			}
 
@@ -345,7 +354,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			return 1;
 		}
 
-		else if (key->vkCode == VK_LSHIFT)
+		else if (key->vkCode == VK_LSHIFT || key->vkCode == VK_RSHIFT)
 		{
 
 			if ((wParam == WM_KEYUP || wParam == WM_SYSKEYUP) && !keystrokeCapsProcessed)
